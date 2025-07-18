@@ -89,7 +89,7 @@ def annotate_and_simulate(dataset_name: str, mode: str):
         print(f"Signature matrix saved to {sig_matrix_path}")
 
     # --- 4. Simulate Pseudo-bulk Data ---
-    n_samples = 5000 if mode == 'train' else 200
+    n_samples = 5000 if mode == 'train' else 500
     n_cells_per_sample = 2000
     print(f"\nStarting pseudo-bulk simulation for '{mode}' set ({n_samples} samples)...")
 

@@ -6,6 +6,7 @@ from torch.optim import AdamW
 import torch.nn.functional as F
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from tqdm.auto import tqdm
+import pandas as pd
 
 # --- Path setup ---
 try:
@@ -48,7 +49,8 @@ def run_training():
     }
     
     # --- 2. Setup Directories and Device ---
-    checkpoints_dir = project_root / "results" / dataset_name / "checkpoints"
+    results_dir = project_root / "results" / dataset_name
+    checkpoints_dir = results_dir / "checkpoints"
     checkpoints_dir.mkdir(parents=True, exist_ok=True)
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"--- Starting training for '{dataset_name}' on {device} ---")
@@ -75,6 +77,10 @@ def run_training():
 
     print(f"Model initialized with {sum(p.numel() for p in model.parameters())} parameters.")
     
+    # Prepare log file
+    log_file_path = results_dir / f'{config["model_type"].lower()}_training_log.csv'
+    log_df = pd.DataFrame(columns=['epoch', 'avg_loss', 'learning_rate'])
+    
     # --- 5. Training Loop ---
     for epoch in range(config["epochs"]):
         model.train()
@@ -95,7 +101,13 @@ def run_training():
             progress_bar.set_postfix(loss=loss.item())
         
         avg_loss = total_loss / len(dataloader)
-        print(f"Epoch {epoch+1} finished. Avg Loss: {avg_loss:.4f}, LR: {scheduler.get_last_lr()[0]:.6f}")
+        current_lr = scheduler.get_last_lr()[0]
+        print(f"Epoch {epoch+1} finished. Avg Loss: {avg_loss:.4f}, LR: {current_lr:.6f}")
+
+        # Log metrics
+        new_log_entry = pd.DataFrame([{'epoch': epoch + 1, 'avg_loss': avg_loss, 'learning_rate': current_lr}])
+        log_df = pd.concat([log_df, new_log_entry], ignore_index=True)
+        log_df.to_csv(log_file_path, index=False)
 
         if (epoch + 1) % config["save_checkpoint_every"] == 0 or epoch == config["epochs"] - 1:
             model_name = config["model_type"].lower()
