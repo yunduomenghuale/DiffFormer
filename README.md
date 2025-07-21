@@ -1,131 +1,127 @@
-# DiffFormer: A Diffusion-based Transformer for Cell Type Deconvolution
 
-## Project Overview
+# DiffFormer: A Transformer-based Diffusion Model for Deconvolution of Bulk RNA-seq Data
 
-This study introduces DiffFormer, a novel deep learning model for cell type deconvolution in bulk RNA-seq data. DiffFormer leverages a diffusion-based transformer architecture to accurately estimate cell type proportions from complex tissue samples. By modeling the inherent noise and variability in gene expression, our approach demonstrates superior performance and generalization across diverse biological samples, from peripheral blood to solid organs.
 
-## Datasets
+## Overview
 
-This study utilized four publicly available scRNA-seq datasets to comprehensively evaluate the performance of our model.
+DiffFormer is a deep learning-based framework for deconvolving bulk RNA-seq data to infer cell type proportions. The project leverages a conditional diffusion model with a Transformer or MLP backbone to learn the complex relationships between bulk gene expression and cell type fractions.
 
-### Peripheral Blood Mononuclear Cell (PBMC) Datasets
-- **pbmc3k**: Sourced from 10x Genomics, this dataset contains approximately 2,700 cells, which we annotated into 8 major immune cell types. ([Link](https://support.10xgenomics.com/single-cell-gene-expression/datasets/1.1.0/pbmc3k))
-- **pbmc68k**: Also from 10x Genomics, this dataset includes about 68,000 cells, with 5 major pre-annotated cell clusters used as a reference. ([Link](https://support.10xgenomics.com/single-cell-gene-expression/datasets/1.1.0/pbmc68k))
+The core idea is to train a model that can reverse a diffusion process, starting from pure noise and a conditioning bulk expression profile, to generate a verisimilar cell type proportion vector.
 
-### Organ Tissue Datasets
-- **Liver Dataset**: Originating from a study by Camp et al. (2017), this dataset comprises scRNA-seq of human liver tissue. After quality control, approximately 2,100 cells across 6 cell types were used. (GEO Accession: [GSE81252](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE81252))
-- **Pancreas Dataset**: From a study by Muraro et al. (2016) on human pancreatic tissue, this dataset includes about 1,900 cells after filtering, with a complex composition of 9 cell types. (GEO Accession: [GSE85241](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE85241))
+## Features
 
-## Results
+- **Diffusion Model Core**: Utilizes a Denoising Diffusion Probabilistic Model (DDPM) to generate accurate cell type proportions.
+- **Conditional Generation**: Conditions the generation process on bulk RNA-seq expression data.
+- **Flexible Backbones**: Implements both a `Transformer` and a simple `MLP` as the denoising network, allowing for a comparison between attention-based and standard architectures.
+- **Multiple Datasets**: Includes data processing, training, and inference pipelines for four public datasets:
+    - PBMC3k
+    - PBMC68k
+    - Pancreas
+    - Liver
+- **Benchmarking**: Compares the model's performance against established deconvolution methods like MuSiC, ADAPTS, and CPM.
 
-### Training Loss Curve
-
-![Training Loss Curve](results/pbmc3k/transformer_loss_curve.png)
-
-**Figure 1: Training Loss Curve of DiffFormer on the pbmc3k Dataset.** The figure shows the raw average loss values for each training epoch, along with a trend line smoothed by a moving average, visually depicting the convergence dynamics during model training.
-
-## Data Availability Statement
-
-The code developed for this study is openly available in this GitHub repository. The public datasets analyzed in this study can be found at:
-- **PBMC Datasets**: Available from the 10x Genomics website ([pbmc3k](https://support.10xgenomics.com/single-cell-gene-expression/datasets/1.1.0/pbmc3k) and [pbmc68k](https://support.10xgenomics.com/single-cell-gene-expression/datasets/1.1.0/pbmc68k)).
-- **Liver Dataset**: Available from the Gene Expression Omnibus (GEO) under accession number [GSE81252](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE81252).
-- **Pancreas Dataset**: Available from the Gene Expression Omnibus (GEO) under accession number [GSE85241](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE85241).
-
-## Getting Started
-
-### 1. Create the Conda Environment
-
-This project's dependencies are managed with Conda. The `environment.yml` file contains all necessary packages for a fully reproducible environment. Create the environment using the following command. This will create a new conda environment named `DiffFormer`.
-
-```bash
-conda env create -f environment.yml
-```
-
-**2. Activate the Environment**
-
-Before running any scripts, activate the newly created environment:
-```bash
-conda activate DiffFormer
-```
-
-## Repository Structure
-
-The project is organized to ensure clarity and reproducibility:
+## Project Structure
 
 ```
-├── data/                   # Raw and processed datasets (pbmc3k, pbmc68k, liver, pancreas)
-├── environment.yml         # Conda environment configuration for reproducibility
-├── README.md               # This README file
-├── results/                # All outputs: model checkpoints, predictions, and final plots
-└── src/                    # All Python source code
-    ├── comparison/         # Scripts for running baseline methods (MuSiC, ADAPTS, CPM)
-    ├── data_processing/    # Scripts for data fetching, QC, and pseudo-bulk generation
-    ├── inference/          # Scripts to run deconvolution with trained models
-    ├── model/              # PyTorch model implementations (DiffFormer, DiffMLP)
-    ├── training/           # Scripts for training the models
-    └── visualization/      # Scripts to generate final plots
+├── data/
+│   ├── pbmc68k/
+│   │   ├── processed/
+│   │   └── raw/
+│   ├── ... (other datasets)
+├── results/
+│   ├── pbmc68k/
+│   │   ├── checkpoints/
+│   │   └── ... (predicted proportions, plots)
+│   ├── ... (other datasets)
+├── src/
+│   ├── model/
+│   │   ├── network.py       # Defines the Transformer and MLP models
+│   │   └── dataset.py       # PyTorch dataset for loading data
+│   ├── training/
+│   │   └── run_pbmc68k_training.py # Training script for a dataset
+│   ├── inference/
+│   │   └── run_pbmc68k_deconvolution.py # Inference and benchmarking script
+│   └── comparison/
+│       ├── run_music.py     # Scripts to run comparison methods
+│       └── ...
+└── environment.yml
 ```
 
-## Reproducibility Guide
-
-To reproduce all results, follow these steps in order. All commands should be run from the root of the project repository.
+## How It Works
 
 ### 1. Data Processing
 
-First, process the raw data for all four datasets. This involves quality control, normalization, and generating the pseudo-bulk samples for training and testing.
+The raw single-cell and bulk RNA-seq data (not included in the repo to save space, but assumed to be acquired) are processed into a format suitable for the model. This involves:
+- Gene filtering and normalization.
+- Simulation of pseudo-bulk samples by aggregating single-cell profiles.
+- Creation of signature matrices.
+- Saving processed data (`bulk_samples.npy`, `proportions.npy`, etc.) in the `data/<dataset_name>/processed` directory.
 
+### 2. Model Architecture
+
+The core of the project is the conditional denoising model, implemented in `src/model/network.py`. Two architectures are provided:
+- `ConditionalDenoisingTransformer`: Uses a Transformer encoder to process the concatenated noisy proportions, timestep embedding, and bulk expression embedding.
+- `ConditionalDenoisingMLP`: A simpler feed-forward network for the same task.
+
+### 3. Training
+
+The training process is handled by scripts in `src/training/`. For a given dataset:
+1.  A `DeconvolutionDataset` (`src/model/dataset.py`) loads the processed bulk samples and their corresponding ground-truth proportions.
+2.  The `DDPMScheduler` from the `diffusers` library is used to manage the forward (noising) process.
+3.  In each training step:
+    - A `clean_proportion` vector is selected.
+    - Noise is added at a random `timestep`.
+    - The model (`ConditionalDenoisingTransformer` or `MLP`) is tasked to predict the added `noise` based on the `noisy_proportion`, the `timestep`, and the conditioning `bulk_expression` profile.
+4.  The Mean Squared Error between the predicted noise and the actual noise is used as the loss function.
+5.  Model checkpoints are saved periodically to the `results/<dataset_name>/checkpoints/` directory.
+
+### 4. Inference and Deconvolution
+
+The inference scripts in `src/inference/` perform the deconvolution:
+1.  The script loads a trained model checkpoint.
+2.  It takes a real or simulated bulk expression sample as input.
+3.  It runs the reverse diffusion process: starting with pure Gaussian noise, the model iteratively denoises the sample for a fixed number of timesteps, guided by the bulk expression profile.
+4.  The final denoised output is a predicted cell type proportion vector.
+5.  This output is post-processed (scaled to [0, 1] and normalized) to ensure it represents a valid probability distribution.
+6.  The script also runs other deconvolution methods (`MuSiC`, `ADAPTS`, `CPM`) on the same data to provide a performance benchmark.
+7.  Finally, it calculates and prints performance metrics (RMSE, Pearson correlation) for all methods.
+
+## How to Run
+
+### 1. Setup Environment
+
+First, create the Conda environment using the provided file:
 ```bash
-# Process PBMC datasets
-python src/data_processing/run_pbmc3k_processing.py
-python src/data_processing/run_pbmc68k_processing.py
-
-# Process Liver dataset
-python src/data_processing/run_liver_processing.py
-
-# Process Pancreas dataset
-python src/data_processing/run_pancreas_processing.py
+conda env create -f environment.yml
+conda activate diffformer
 ```
 
-### 2. Model Training
+### 2. Data
+*Note: The processed data is provided in this repository, but the scripts for data fetching and processing were part of the original project structure and can be recreated if needed.*
 
-Next, train the `DiffFormer` and `DiffMLP` models on all four datasets. Checkpoints will be saved to the `results/{dataset_name}/` directory.
+Ensure the processed data files are located in the `data/<dataset-name>/processed/` directories.
 
+### 3. Training a Model
+
+To train a model on a specific dataset, run the corresponding training script. For example, to train the Transformer model on the PBMC68k dataset:
 ```bash
-# --- Train on pbmc3k ---
-python src/training/run_pbmc3k_training.py       # DiffFormer
-python src/training/run_pbmc3k_training_mlp.py  # DiffMLP
-
-# --- Train on pbmc68k ---
-python src/training/run_pbmc68k_training.py       # DiffFormer
-python src/training/run_pbmc68k_training_mlp.py  # DiffMLP
-
-# --- Train on liver ---
-python src/training/run_liver_training.py       # DiffFormer
-python src/training/run_liver_training_mlp.py  # DiffMLP
-
-# --- Train on pancreas ---
-python src/training/run_pancreas_training.py       # DiffFormer
-python src/training/run_pancreas_training_mlp.py  # DiffMLP
+python src/training/run_pbmc68k_training.py
 ```
+Checkpoints will be saved in `results/pbmc68k/checkpoints/`.
 
-### 3. Deconvolution / Inference
+### 4. Running Deconvolution
 
-With the trained models, run inference to generate the predicted cell type proportions for all models (DiffFormer, DiffMLP, and baselines). The main inference scripts automatically trigger the baseline models (`ADAPTS`, `MuSiC`, `CPM`). Predictions are saved as `.npy` files in the `results/{dataset_name}/` directory.
-
+After training, you can run inference and compare the model against benchmarks. Make sure the checkpoint path in the inference script matches the one saved during training.
 ```bash
-# --- Run inference on pbmc3k ---
-python src/inference/run_pbmc3k_deconvolution.py
-python src/inference/run_pbmc3k_deconvolution_mlp.py
-
-# --- Run inference on pbmc68k ---
 python src/inference/run_pbmc68k_deconvolution.py
-python src/inference/run_pbmc68k_deconvolution_mlp.py
-
-# --- Run inference on liver ---
-python src/inference/run_liver_deconvolution.py
-python src/inference/run_liver_deconvolution_mlp.py
-
-# --- Run inference on pancreas ---
-python src/inference/run_pancreas_deconvolution.py
-python src/inference/run_pancreas_deconvolution_mlp.py
 ```
+This will:
+- Load the trained DiffFormer model.
+- Run deconvolution on the test set.
+- Run MuSiC, ADAPTS, and CPM for comparison.
+- Save all predicted proportions to `.npy` files in `results/pbmc68k/`.
+- Print a summary of the performance metrics.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
